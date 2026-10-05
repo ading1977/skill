@@ -1,0 +1,72 @@
+# P3 on-call SRE: an incident day across five log sources.
+# Long-chain problem: multi-source correlation and long-context carry -- the
+# closing postmortem must cite findings that were scattered across the
+# apache/ssh/hdfs/syslog/nginx threads.
+name: sre-day
+category: log_analysis
+timeout_seconds: 3600
+
+threads:
+  apache:
+    - task_log_apache_top_errors
+    - task_log_apache_timeline
+    - task_log_apache_critical
+    - task_log_apache_client_issues
+  ssh:
+    - task_log_ssh_brute_force
+    - task_log_ssh_failed_logins
+    - task_log_ssh_unusual_times
+  hdfs:
+    - task_log_hdfs_slow_ops
+    - task_log_hdfs_failures
+    - task_log_hdfs_storage
+  syslog:
+    - task_log_syslog_anomalies
+    - task_log_syslog_auth_failures
+    - task_log_syslog_services
+  nginx:
+    - task_log_nginx_errors
+    - task_log_nginx_status_codes
+    - task_log_nginx_traffic
+
+order:
+  - apache.0
+  - ssh.0
+  - hdfs.0
+  - syslog.0
+  - nginx.0
+  - apache.1
+  - ssh.1
+  - hdfs.1
+  - syslog.1
+  - nginx.1
+  - apache.2
+  - ssh.2
+  - hdfs.2
+  - syslog.2
+  - nginx.2
+  - apache.3
+  - synth.0
+
+synthesis:
+  - id: incident_postmortem
+    prompt: |
+      写一份事故复盘，保存到 incident_postmortem.md。综合今天五个日志源的发现，
+      说明：可能的入侵迹象、Apache 侧最主要的错误、以及服务层面发生了什么。
+      引用你产出的至少两个报告文件名。
+    checks:
+      - key: file_created
+        python: |
+          return 1.0 if exists_ws(workspace_path, "incident_postmortem.md") else 0.0
+      - key: covers_sources
+        python: |
+          content = read_ws(workspace_path, "incident_postmortem.md").lower()
+          hits = sum(1.0 for token in ("brute force", "apache", "syslog", "hdfs")
+                     if token in content)
+          return hits / 4.0
+      - key: references_reports
+        python: |
+          content = read_ws(workspace_path, "incident_postmortem.md").lower()
+          reports = ["brute_force_report.json", "error_types_report.json",
+                     "syslog_anomalies.md", "hdfs_failure_report.md"]
+          return 1.0 if sum(1 for r in reports if r in content) >= 2 else 0.0

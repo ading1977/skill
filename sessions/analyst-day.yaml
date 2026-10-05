@@ -1,0 +1,68 @@
+# P2 data analyst: a quarterly review spread across five datasets.
+# Long-chain problem: cumulative computation and consistent definitions --
+# each dataset thread builds its own report while the day ends with a brief
+# that must reuse the numbers computed earlier.
+name: analyst-day
+category: csv_analysis
+timeout_seconds: 3600
+
+threads:
+  cities:
+    - task_csv_cities_ranking
+    - task_csv_cities_filter
+    - task_csv_cities_growth
+  stock:
+    - task_csv_stock_best_worst
+    - task_csv_stock_trend
+    - task_csv_stock_volatility
+  temp:
+    - task_csv_temp_trend
+    - task_csv_temp_decades
+    - task_csv_temp_anomalies
+  pension:
+    - task_csv_pension_ranking
+    - task_csv_pension_risk
+    - task_csv_pension_liability
+  iris:
+    - task_csv_iris_summary
+    - task_csv_iris_outliers
+    - task_csv_iris_classify
+
+order:
+  - cities.0
+  - stock.0
+  - temp.0
+  - pension.0
+  - iris.0
+  - cities.1
+  - stock.1
+  - temp.1
+  - pension.1
+  - iris.1
+  - cities.2
+  - stock.2
+  - temp.2
+  - pension.2
+  - iris.2
+  - synth.0
+
+synthesis:
+  - id: analyst_brief
+    prompt: |
+      写一份分析师简报，保存到 analyst_brief.md。用三句话分别总结：
+      1) 美国城市数据集里人口最多的城市及其人口；
+      2) 全球气温数据集里的异常情况；
+      3) 养老金数据里风险最高的州。三句话都要给出具体数值或名称。
+    checks:
+      - key: file_created
+        python: |
+          return 1.0 if exists_ws(workspace_path, "analyst_brief.md") else 0.0
+      - key: top_city
+        python: |
+          content = read_ws(workspace_path, "analyst_brief.md").lower()
+          return 1.0 if "new york" in content else 0.0
+      - key: cross_dataset
+        python: |
+          content = read_ws(workspace_path, "analyst_brief.md").lower()
+          hits = sum(1.0 for token in ("new york", "temperature", "pension") if token in content)
+          return hits / 3.0

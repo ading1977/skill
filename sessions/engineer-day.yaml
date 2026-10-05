@@ -1,0 +1,79 @@
+# P1 software engineer: a day of shipping.
+# Long-chain problem: one body of code evolves across turns (write -> refactor
+# -> test) while ops/security/tooling threads interleave; later turns must
+# carry decisions made earlier.
+name: engineer-day
+category: coding
+timeout_seconds: 3600
+
+threads:
+  shipping:
+    - task_multi_file_refactoring
+    - task_selector_fix
+    - task_playwright_e2e
+    - task_browser_automation
+  ops:
+    - task_k8s_debugging
+    - task_dockerfile_optimization
+    - task_git_rescue_recovery
+    - task_shell_command_generator
+  security:
+    - task_cve_security_triage
+    - task_access_log_anomaly
+    - task_spreadsheet_summary
+  tooling:
+    - task_skill_search
+    - task_files
+    - task_openclaw_comprehension
+
+order:
+  - shipping.0
+  - ops.0
+  - security.0
+  - tooling.0
+  - shipping.1
+  - ops.1
+  - security.1
+  - tooling.1
+  - shipping.2
+  - ops.2
+  - security.2
+  - tooling.2
+  - shipping.3
+  - ops.3
+  - synth.0
+  - synth.1
+
+synthesis:
+  - id: standup
+    prompt: |
+      用一段话回顾今天的工作，覆盖三条工作线：代码交付（重构/测试）、运维
+      （部署配置/CI）、安全分析。明确说出今天处理的安全问题编号，以及你交付的
+      任何产物文件名。不要重新读取文件，直接凭本会话上下文回答。
+    checks:
+      - key: names_three_lines
+        python: |
+          t = final_text(transcript).lower()
+          code = ("refactor" in t) or ("重构" in t) or ("交付" in t)
+          ops = ("deploy" in t) or ("ci" in t) or ("运维" in t)
+          sec = ("security" in t) or ("安全" in t) or ("cve" in t)
+          return 1.0 if code and ops and sec else (0.5 if sum([code, ops, sec]) == 2 else 0.0)
+      - key: cites_artifact
+        python: |
+          t = final_text(transcript).lower()
+          artifacts = ["vulnerability_scan.json", "triage_report.md", "requirements.txt",
+                       "deployment.yml", "shop.html", "form.html"]
+          return 1.0 if any(a in t for a in artifacts) else 0.0
+  - id: handoff
+    prompt: |
+      写一份交接文档，保存到 handoff.md。逐条列出今天每条工作线的关键产物文件名
+      （至少各一个），并指出明天第一件要做的事。
+    checks:
+      - key: file_created
+        python: |
+          return 1.0 if exists_ws(workspace_path, "handoff.md") else 0.0
+      - key: references_artifacts
+        python: |
+          content = read_ws(workspace_path, "handoff.md").lower()
+          expected = ["requirements.txt", "vulnerability_scan.json", "shop.html"]
+          return sum(1.0 for name in expected if name in content) / len(expected)

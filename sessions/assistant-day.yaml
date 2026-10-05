@@ -1,0 +1,78 @@
+# P4 personal assistant: a working day of email, calendar, memory and admin.
+# Long-chain problem: high-frequency small-file churn with cross-turn recall --
+# fragments from the morning resurface in the end-of-day brief.
+#
+# task_workflow is intentionally absent: its grade() globs "*.py" and would be
+# polluted by task_clawdhub's top-level test_datautils.py (design §5 rule 3).
+name: assistant-day
+category: productivity
+timeout_seconds: 3600
+
+threads:
+  comms:
+    - task_email_triage
+    - task_email_search
+    - task_meeting_follow_up_email
+  scheduling:
+    - task_calendar
+    - task_cron_organizer
+  memory:
+    - task_memory
+    - task_second_brain
+  files:
+    - task_clawdhub
+    - task_skill_search
+    - task_image_identification
+  data:
+    - task_spreadsheet_summary
+  admin:
+    - task_todo_list_cleanup
+    - task_meeting_tldr
+
+order:
+  - comms.0
+  - scheduling.0
+  - memory.0
+  - files.0
+  - data.0
+  - admin.0
+  - comms.1
+  - scheduling.1
+  - memory.1
+  - files.1
+  - admin.1
+  - comms.2
+  - files.2
+  - synth.0
+  - synth.1
+
+synthesis:
+  - id: eod
+    prompt: |
+      一天结束了。凭本会话的上下文回答：今天收件箱里最高优先级的邮件主题是什么？
+      要安排的会议是什么？还缺一个数字：你在某个数据文件里读到的预算金额或关键
+      数值是多少？不要重新读取文件，直接回答。
+    checks:
+      - key: recalls_priority
+        python: |
+          t = final_text(transcript).lower()
+          return 1.0 if ("priority" in t or "urgent" in t or "p0" in t or "优先" in t) else 0.0
+      - key: recalls_meeting
+        python: |
+          t = final_text(transcript).lower()
+          return 1.0 if ("meeting" in t or "会议" in t or "3pm" in t or "15:00" in t) else 0.0
+  - id: eod_brief
+    prompt: |
+      写一份下班简报，保存到 eod_brief.md。分别用一句话总结：邮件分诊结论、
+      已安排的日程、以及从记忆/数据文件里得到的一个关键事实。至少引用两个你
+      今天产出的文件名。
+    checks:
+      - key: file_created
+        python: |
+          return 1.0 if exists_ws(workspace_path, "eod_brief.md") else 0.0
+      - key: references_artifacts
+        python: |
+          content = read_ws(workspace_path, "eod_brief.md").lower()
+          artifacts = ["triage_report.md", "calendar", "answer.txt", "todos_cleaned.json",
+                       "data_summary.md"]
+          return 1.0 if sum(1 for a in artifacts if a in content) >= 2 else 0.0
