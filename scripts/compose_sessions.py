@@ -18,7 +18,7 @@ Only deterministic grading is consumed: `grading_type: automated` in full and
 `## Automated Checks` python block) are rejected by construction.
 
 Design authority:
-docs/customization/benchmarks/pinchbench/multi-turn-personas-design.md
+docs/customization/multi-turn-personas-design.md
 
 Dependency: PyYAML (the upstream PinchBench task frontmatter uses block
 scalars and inline content, so a hand-rolled parser is not safe).

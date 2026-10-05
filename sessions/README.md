@@ -2,7 +2,7 @@
 
 Builds long-session multi-turn PinchBench tasks by composing existing
 single-turn tasks. Design authority (ARIES repo):
-`docs/customization/benchmarks/pinchbench/multi-turn-personas-design.md`.
+`docs/customization/multi-turn-personas-design.md`.
 
 This lives in the benchmark checkout because that is where tasks are defined:
 ARIES pins this repository (`catalog/workloads/pinchbench.yaml`), clones it to
