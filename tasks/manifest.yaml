@@ -65,6 +65,7 @@ categories:
     - task_email_triage
     - task_cron_organizer
     - task_subway_navigation
+    - task_assistant-day
 
   research:
     - task_stock
@@ -103,6 +104,7 @@ categories:
     - task_browser_automation
     - task_video_transcript_extraction
     - task_iterative_code_refine
+    - task_engineer-day
 
   analysis:
     - task_summary
@@ -145,6 +147,7 @@ categories:
     - task_csv_pension_ranking
     - task_csv_pension_liability
     - task_csv_pension_risk
+    - task_analyst-day
 
   log_analysis:
     - task_log_apache_client_issues
@@ -177,6 +180,7 @@ categories:
     - task_log_syslog_services
     - task_log_syslog_cron
     - task_log_syslog_auth_failures
+    - task_sre-day
 
   meeting_analysis:
     - task_meeting_council_votes

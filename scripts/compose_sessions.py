@@ -509,6 +509,28 @@ def validate_rendered(rendered: str, name: str) -> None:
             f"task_{name}-grade", "exec")
 
 
+def verify_registration(root: Path, name: str, category: str) -> None:
+    """The benchmark repo's tasks/manifest.yaml is the single source of truth:
+    lint_manifest.py requires every tasks/task_*.md to appear in exactly one
+    category. Fail closed when a composed task is not registered."""
+    manifest_path = root / "tasks" / "manifest.yaml"
+    if not manifest_path.exists():
+        return
+    manifest = yaml.safe_load(utf8_text(manifest_path)) or {}
+    categories = manifest.get("categories") or {}
+    task_id = f"task_{name}"
+    listed = [cat for cat, ids in categories.items() if task_id in (ids or [])]
+    if not listed:
+        raise ComposeError(
+            f"{task_id} is not registered in tasks/manifest.yaml; add it under "
+            f"category {category!r} (lint_manifest.py requires it)"
+        )
+    if listed != [category]:
+        raise ComposeError(
+            f"{task_id} is registered under {listed}, expected [{category!r}]"
+        )
+
+
 def compose_one(manifest_path: Path, root: Path) -> tuple:
     manifest = load_manifest(manifest_path)
     refs, synth_order = resolve_steps(manifest, root)
@@ -516,6 +538,8 @@ def compose_one(manifest_path: Path, root: Path) -> tuple:
     validate_conflicts(tasks)
     merge_fixtures(tasks)  # fail early on real fixture conflicts
     name = str(manifest["name"]).strip()
+    category = str(manifest.get("category", "coding")).strip()
+    verify_registration(root, name, category)
     rendered = render_task(manifest, tasks, synth_order)
     validate_rendered(rendered, name)
     return name, rendered

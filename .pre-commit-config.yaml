@@ -11,3 +11,9 @@ repos:
         entry: python scripts/lint_argparse_help.py
         language: system
         pass_filenames: false
+
+      - id: compose-sessions-drift
+        name: composed sessions in sync
+        entry: python scripts/compose_sessions.py --check
+        language: system
+        pass_filenames: false
